@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using QuanLyThuVienSo.API.BUS;
 using QuanLyThuVienSo.API.Models;
+using QuanLyThuVienSo.API.DTO; // Nhớ thêm dòng này để dùng DTO
 
 namespace QuanLyThuVienSo.API.Controllers
 {
@@ -15,22 +16,34 @@ namespace QuanLyThuVienSo.API.Controllers
             _bus = bus;
         }
 
-        // 1. LẤY DANH SÁCH
+        // 1. LẤY DANH SÁCH (Giữ nguyên)
         [HttpGet]
         public async Task<IActionResult> GetBooks([FromQuery] string? keyword)
         {
             return Ok(await _bus.LayDanhSachSach(keyword));
         }
 
-        // 2. THÊM SÁCH (Đã có logic cộng dồn)
+        // 2. THÊM SÁCH (Đã sửa để nhận DTO)
         [HttpPost]
-        public async Task<IActionResult> CreateBook([FromBody] Sach sach)
+        public async Task<IActionResult> CreateBook([FromBody] SachDTO request)
         {
             try
             {
-                // Hàm này giờ trả về chuỗi thông báo (Thêm mới hay Cộng dồn)
-                string message = await _bus.ThemSachMoi(sach);
-                return Ok(new { message = message });
+                // Chuyển đổi từ DTO (Gọn) -> Entity (Đầy đủ để lưu DB)
+                var sachEntity = new Sach
+                {
+                    MaSach = request.MaSach,
+                    TenSach = request.TenSach,
+                    TheLoai = request.TheLoai,
+                    NhaXuatBan = request.NhaXuatBan,
+                    NgayXuatBan = request.NgayXuatBan,
+                    MaTacGia = request.MaTacGia,
+                    SoLuong = request.SoLuong,
+                    GiaTien = request.GiaTien
+                };
+
+                string message = await _bus.ThemSachMoi(sachEntity);
+                return Ok(new { message = message, data = request });
             }
             catch (Exception ex)
             {
@@ -38,13 +51,26 @@ namespace QuanLyThuVienSo.API.Controllers
             }
         }
 
-        // 3. SỬA SÁCH (MỚI THÊM)
+        // 3. SỬA SÁCH (Đã sửa để nhận DTO)
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateBook(string id, [FromBody] Sach sach)
+        public async Task<IActionResult> UpdateBook(string id, [FromBody] SachDTO request)
         {
             try
             {
-                await _bus.CapNhatSach(id, sach);
+                // Chuyển đổi từ DTO -> Entity
+                var sachEntity = new Sach
+                {
+                    MaSach = id, // Lấy ID từ URL
+                    TenSach = request.TenSach,
+                    TheLoai = request.TheLoai,
+                    NhaXuatBan = request.NhaXuatBan,
+                    NgayXuatBan = request.NgayXuatBan,
+                    MaTacGia = request.MaTacGia,
+                    SoLuong = request.SoLuong,
+                    GiaTien = request.GiaTien
+                };
+
+                await _bus.CapNhatSach(id, sachEntity);
                 return Ok(new { message = "Cập nhật sách thành công!" });
             }
             catch (Exception ex)
@@ -53,7 +79,7 @@ namespace QuanLyThuVienSo.API.Controllers
             }
         }
 
-        // 4. XÓA SÁCH (MỚI THÊM)
+        // 4. XÓA SÁCH (Giữ nguyên)
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBook(string id)
         {

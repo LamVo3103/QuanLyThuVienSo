@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using QuanLyThuVienSo.API.BUS; // Gọi BUS
+using QuanLyThuVienSo.API.BUS;
 using QuanLyThuVienSo.API.Models;
+using QuanLyThuVienSo.API.DTO; // Thêm dòng này
 
 namespace QuanLyThuVienSo.API.Controllers
 {
@@ -21,13 +22,23 @@ namespace QuanLyThuVienSo.API.Controllers
             return Ok(await _bus.LayDanhSach(keyword));
         }
 
+        // THÊM TÁC GIẢ (Dùng DTO)
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] TacGia tacGia)
+        public async Task<IActionResult> Create([FromBody] TacGiaDTO request)
         {
             try
             {
-                await _bus.ThemTacGia(tacGia);
-                return Ok(new { message = "Thêm tác giả thành công", data = tacGia });
+                // Mapping
+                var tacGiaEntity = new TacGia
+                {
+                    MaTacGia = request.MaTacGia,
+                    HoTen = request.HoTen,
+                    GioiTinh = request.GioiTinh,
+                    QueQuan = request.QueQuan
+                };
+
+                await _bus.ThemTacGia(tacGiaEntity);
+                return Ok(new { message = "Thêm tác giả thành công", data = request });
             }
             catch (Exception ex)
             {
@@ -35,12 +46,22 @@ namespace QuanLyThuVienSo.API.Controllers
             }
         }
 
+        // SỬA TÁC GIẢ (Dùng DTO)
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] TacGia request)
+        public async Task<IActionResult> Update(string id, [FromBody] TacGiaDTO request)
         {
             try
             {
-                await _bus.CapNhatTacGia(id, request);
+                // Mapping
+                var tacGiaEntity = new TacGia
+                {
+                    MaTacGia = id,
+                    HoTen = request.HoTen,
+                    GioiTinh = request.GioiTinh,
+                    QueQuan = request.QueQuan
+                };
+
+                await _bus.CapNhatTacGia(id, tacGiaEntity);
                 return Ok(new { message = "Cập nhật thành công" });
             }
             catch (Exception ex)
