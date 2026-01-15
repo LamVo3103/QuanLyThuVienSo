@@ -10,5 +10,7 @@ namespace QuanLyThuVienSo.API.DTO
         public string MaTacGia { get; set; } = null!; // Chỉ giữ lại Mã, bỏ object Tác giả
         public int? SoLuong { get; set; }
         public decimal? GiaTien { get; set; }
+
+        public bool? DangKinhDoanh { get; set; }
     }
 }

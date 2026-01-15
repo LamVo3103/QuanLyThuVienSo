@@ -25,11 +25,10 @@ namespace QuanLyThuVienSo.API.Controllers
 
         // 2. THÊM SÁCH (Đã sửa để nhận DTO)
         [HttpPost]
-        public async Task<IActionResult> CreateBook([FromBody] SachDTO request)
+        public async Task<IActionResult> CreateBook([FromBody] QuanLyThuVienSo.API.DTO.SachDTO request)
         {
             try
             {
-                // Chuyển đổi từ DTO (Gọn) -> Entity (Đầy đủ để lưu DB)
                 var sachEntity = new Sach
                 {
                     MaSach = request.MaSach,
@@ -39,7 +38,8 @@ namespace QuanLyThuVienSo.API.Controllers
                     NgayXuatBan = request.NgayXuatBan,
                     MaTacGia = request.MaTacGia,
                     SoLuong = request.SoLuong,
-                    GiaTien = request.GiaTien
+                    GiaTien = request.GiaTien,
+                    DangKinhDoanh = request.DangKinhDoanh ?? true 
                 };
 
                 string message = await _bus.ThemSachMoi(sachEntity);
@@ -53,21 +53,21 @@ namespace QuanLyThuVienSo.API.Controllers
 
         // 3. SỬA SÁCH (Đã sửa để nhận DTO)
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateBook(string id, [FromBody] SachDTO request)
+        public async Task<IActionResult> UpdateBook(string id, [FromBody] QuanLyThuVienSo.API.DTO.SachDTO request)
         {
             try
             {
-                // Chuyển đổi từ DTO -> Entity
                 var sachEntity = new Sach
                 {
-                    MaSach = id, // Lấy ID từ URL
+                    MaSach = id,
                     TenSach = request.TenSach,
                     TheLoai = request.TheLoai,
                     NhaXuatBan = request.NhaXuatBan,
                     NgayXuatBan = request.NgayXuatBan,
                     MaTacGia = request.MaTacGia,
                     SoLuong = request.SoLuong,
-                    GiaTien = request.GiaTien
+                    GiaTien = request.GiaTien,
+                    DangKinhDoanh = request.DangKinhDoanh ?? true 
                 };
 
                 await _bus.CapNhatSach(id, sachEntity);
@@ -78,7 +78,6 @@ namespace QuanLyThuVienSo.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
-
         // 4. XÓA SÁCH (Giữ nguyên)
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBook(string id)
