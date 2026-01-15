@@ -25,13 +25,13 @@ namespace QuanLyThuVienSo.API.Controllers
             return Ok(list);
         }
 
-        // --- ENDPOINT MỚI: LẤY DANH SÁCH QUÁ HẠN ---
         [HttpGet("overdue")]
-        public async Task<IActionResult> GetOverdueReaders()
+        public async Task<IActionResult> GetOverdueReaders([FromQuery] string? keyword)
         {
             try
             {
-                var list = await _bus.LayDanhSachQuaHan();
+                // Truyền keyword vào BUS
+                var list = await _bus.LayDanhSachQuaHan(keyword);
                 return Ok(list);
             }
             catch (Exception ex)

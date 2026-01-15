@@ -54,9 +54,12 @@ namespace QuanLyThuVienSo.API.BUS
         }
 
         // 2. LẤY DANH SÁCH QUÁ HẠN (Mới)
-        public async Task<List<DocGiaDTO>> LayDanhSachQuaHan()
+        public async Task<List<DocGiaDTO>> LayDanhSachQuaHan(string? keyword)
         {
-            var listEntity = await _dal.GetDocGiaQuaHan();
+            // Truyền keyword xuống DAL
+            var listEntity = await _dal.GetDocGiaQuaHan(keyword);
+            
+            // Map sang DTO như cũ
             return listEntity.Select(dg => MapToDTO(dg)).ToList();
         }
 

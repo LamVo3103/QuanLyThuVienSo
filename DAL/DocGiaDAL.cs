@@ -22,13 +22,22 @@ namespace QuanLyThuVienSo.API.DAL
         }
 
         // 2. Thêm hàm mới: Lấy danh sách đang quá hạn
-        public async Task<List<DocGia>> GetDocGiaQuaHan()
+        public async Task<List<DocGia>> GetDocGiaQuaHan(string? keyword)
         {
-            // Logic: Lấy những ông có Phiếu Mượn mà (Chưa trả VÀ Ngày trả dự kiến < Hôm nay)
-            return await _context.DocGias
+            // 1. Lọc cơ bản: Những người có phiếu quá hạn
+            var query = _context.DocGias
                 .Include(dg => dg.PhieuMuons)
                 .Where(dg => dg.PhieuMuons.Any(pm => pm.NgayTraThucTe == null && pm.NgayTraDuKien < DateTime.Now))
-                .ToListAsync();
+                .AsQueryable();
+
+            // 2. Lọc nâng cao: Nếu có từ khóa thì tìm theo Tên hoặc Mã
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                // Lưu ý: Dùng ToLower() để tìm không phân biệt hoa thường nếu cần
+                query = query.Where(x => x.HoTen.Contains(keyword) || x.MaDocGia.Contains(keyword));
+            }
+
+            return await query.ToListAsync();
         }
 
         public async Task<DocGia?> GetById(string id) => await _context.DocGias.FindAsync(id);
