@@ -11,6 +11,5 @@ namespace QuanLyThuVienSo.API.DTO
         public int? SoLuong { get; set; }
         public decimal? GiaTien { get; set; }
 
-        public bool? DangKinhDoanh { get; set; }
     }
 }

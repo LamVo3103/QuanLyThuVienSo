@@ -9,5 +9,6 @@ namespace QuanLyThuVienSo.API.DTO
         public string? DiaChi { get; set; }
         public string? DienThoai { get; set; }
         public string? Cccd { get; set; }
+        public string? TrangThaiMuon { get; set; }
     }
 }

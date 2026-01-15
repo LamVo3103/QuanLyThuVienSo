@@ -39,7 +39,6 @@ namespace QuanLyThuVienSo.API.Controllers
                     MaTacGia = request.MaTacGia,
                     SoLuong = request.SoLuong,
                     GiaTien = request.GiaTien,
-                    DangKinhDoanh = request.DangKinhDoanh ?? true 
                 };
 
                 string message = await _bus.ThemSachMoi(sachEntity);
@@ -67,7 +66,6 @@ namespace QuanLyThuVienSo.API.Controllers
                     MaTacGia = request.MaTacGia,
                     SoLuong = request.SoLuong,
                     GiaTien = request.GiaTien,
-                    DangKinhDoanh = request.DangKinhDoanh ?? true 
                 };
 
                 await _bus.CapNhatSach(id, sachEntity);

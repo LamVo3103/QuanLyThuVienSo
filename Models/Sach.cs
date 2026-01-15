@@ -24,5 +24,4 @@ public partial class Sach
 
     public virtual TacGia? MaTacGiaNavigation { get; set; }
 
-    public bool DangKinhDoanh { get; set; } = true;
 }

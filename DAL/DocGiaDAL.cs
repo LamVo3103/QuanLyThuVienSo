@@ -10,13 +10,25 @@ namespace QuanLyThuVienSo.API.DAL
 
         public async Task<List<DocGia>> GetAll(string? keyword)
         {
-            var query = _context.DocGias.AsQueryable();
+            var query = _context.DocGias
+                .Include(dg => dg.PhieuMuons)
+                .AsQueryable();
+
             if (!string.IsNullOrEmpty(keyword))
             {
-                query = query.Where(d => (d.HoTen != null && d.HoTen.Contains(keyword)) 
-                                      || (d.Cccd != null && d.Cccd.Contains(keyword)));
+                query = query.Where(x => x.HoTen.Contains(keyword) || x.MaDocGia.Contains(keyword));
             }
             return await query.ToListAsync();
+        }
+
+        // 2. Thêm hàm mới: Lấy danh sách đang quá hạn
+        public async Task<List<DocGia>> GetDocGiaQuaHan()
+        {
+            // Logic: Lấy những ông có Phiếu Mượn mà (Chưa trả VÀ Ngày trả dự kiến < Hôm nay)
+            return await _context.DocGias
+                .Include(dg => dg.PhieuMuons)
+                .Where(dg => dg.PhieuMuons.Any(pm => pm.NgayTraThucTe == null && pm.NgayTraDuKien < DateTime.Now))
+                .ToListAsync();
         }
 
         public async Task<DocGia?> GetById(string id) => await _context.DocGias.FindAsync(id);
