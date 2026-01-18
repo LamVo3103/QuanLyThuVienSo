@@ -1,22 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace QuanLyThuVienSo.API.Models;
-
-public partial class PhieuMuon
+namespace QuanLyThuVienSo.API.Models
 {
-    public int MaPhieu { get; set; }
+    [Table("PhieuMuon")] // Hoặc tên bảng của bạn
+    public class PhieuMuon
+    {
+        [Key]
+        public int MaPhieu { get; set; }
 
-    public string? MaDocGia { get; set; }
+        public string MaDocGia { get; set; } = null!;
 
-    public DateTime? NgayMuon { get; set; }
+        public DateTime NgayMuon { get; set; }
+        public DateTime? NgayTraDuKien { get; set; }
+        public DateTime? NgayTraThucTe { get; set; }
 
-    public DateTime? NgayTraDuKien { get; set; }
+        // 👇 BỔ SUNG DÒNG NÀY ĐỂ DÙNG ĐƯỢC .Include(pm => pm.DocGia)
+        [ForeignKey("MaDocGia")]
+        public virtual DocGia? DocGia { get; set; }
 
-    // Đây là cột mới thêm
-    public DateTime? NgayTraThucTe { get; set; }
-
-    public virtual ICollection<ChiTietPhieuMuon> ChiTietPhieuMuons { get; set; } = new List<ChiTietPhieuMuon>();
-
-    public virtual DocGia? MaDocGiaNavigation { get; set; }
+        // Danh sách chi tiết (Đã có sẵn)
+        public virtual ICollection<ChiTietPhieuMuon> ChiTietPhieuMuons { get; set; } = new List<ChiTietPhieuMuon>();
+    }
 }
