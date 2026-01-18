@@ -14,6 +14,7 @@ namespace QuanLyThuVienSo.API.Models
         public DateTime NgayMuon { get; set; }
         public DateTime? NgayTraDuKien { get; set; }
         public DateTime? NgayTraThucTe { get; set; }
+        public decimal TienPhat { get; set; } = 0;
 
         // 👇 BỔ SUNG DÒNG NÀY ĐỂ DÙNG ĐƯỢC .Include(pm => pm.DocGia)
         [ForeignKey("MaDocGia")]

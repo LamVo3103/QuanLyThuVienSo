@@ -68,27 +68,51 @@ namespace QuanLyThuVienSo.API.BUS
         }
 
         // 2. CHỨC NĂNG TRẢ SÁCH
-        public async Task TraSach(int maPhieu)
+        public async Task<string> TraSach(int maPhieu)
         {
-            // Lấy phiếu mượn kèm chi tiết để biết đường cộng lại kho
+            // 1. Lấy phiếu kèm chi tiết (để đếm số lượng sách)
             var phieu = await _dal.Context.PhieuMuons
-                .Include(pm => pm.ChiTietPhieuMuons) // Quan trọng: Phải include chi tiết
+                .Include(pm => pm.ChiTietPhieuMuons)
                 .FirstOrDefaultAsync(pm => pm.MaPhieu == maPhieu);
 
             if (phieu == null) throw new Exception("Không tìm thấy phiếu mượn");
             if (phieu.NgayTraThucTe != null) throw new Exception("Phiếu này đã trả rồi");
 
-            phieu.NgayTraThucTe = DateTime.Now;
+            // 2. Cập nhật ngày trả
+            DateTime ngayTraThucTe = DateTime.Now;
+            phieu.NgayTraThucTe = ngayTraThucTe;
 
+            // 3. --- TÍNH TIỀN PHẠT (LOGIC MỚI) ---
+            string thongBaoPhat = "";
+            
+            // Nếu có ngày dự kiến và trả trễ hơn dự kiến
+            if (phieu.NgayTraDuKien.HasValue && ngayTraThucTe.Date > phieu.NgayTraDuKien.Value.Date)
+            {
+                // Tính số ngày trễ (Làm tròn lên)
+                TimeSpan tre = ngayTraThucTe.Date - phieu.NgayTraDuKien.Value.Date;
+                int soNgayTre = (int)tre.TotalDays;
+
+                // Tính tổng số cuốn sách trong phiếu này
+                int tongSoSach = phieu.ChiTietPhieuMuons.Sum(ct => ct.SoLuong);
+
+                // Công thức: 20k * Số ngày * Số sách
+                decimal tienPhat = 20000 * soNgayTre * tongSoSach;
+                
+                phieu.TienPhat = tienPhat; // Lưu vào DB
+                
+                thongBaoPhat = $" (Đã quá hạn {soNgayTre} ngày. Phạt: {tienPhat:N0} VNĐ)";
+            }
+
+            // 4. Cộng lại kho sách (như cũ)
             foreach (var ct in phieu.ChiTietPhieuMuons)
             {
                 var sach = await _sachDAL.GetById(ct.MaSach);
-                if (sach != null) 
-                {
-                    sach.SoLuong += ct.SoLuong;
-                }
+                if (sach != null) sach.SoLuong += ct.SoLuong;
             }
+
             await _dal.Context.SaveChangesAsync();
+            
+            return "Trả sách thành công" + thongBaoPhat;
         }
 
         // 3. LẤY DANH SÁCH ĐANG MƯỢN (CHO PHẦN TRẢ SÁCH)
