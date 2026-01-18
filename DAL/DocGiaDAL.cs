@@ -27,7 +27,7 @@ namespace QuanLyThuVienSo.API.DAL
             // 1. Lọc cơ bản: Những người có phiếu quá hạn
             var query = _context.DocGias
                 .Include(dg => dg.PhieuMuons)
-                .Where(dg => dg.PhieuMuons.Any(pm => pm.NgayTraThucTe == null && pm.NgayTraDuKien < DateTime.Now))
+                .Where(dg => dg.PhieuMuons.Any(pm => pm.NgayTraThucTe != null && pm.NgayTraDuKien < DateTime.Now))
                 .AsQueryable();
 
             // 2. Lọc nâng cao: Nếu có từ khóa thì tìm theo Tên hoặc Mã
