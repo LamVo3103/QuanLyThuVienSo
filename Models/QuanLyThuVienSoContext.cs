@@ -79,7 +79,13 @@ public partial class QuanLyThuVienSoContext : DbContext
             entity.Property(e => e.NgayTraDuKien).HasColumnType("timestamp without time zone").HasColumnName("ngaytradukien");
             entity.Property(e => e.NgayTraThucTe).HasColumnType("timestamp without time zone").HasColumnName("ngaytrathucte");
 
-            //  MaDocGiaNavigation -> DocGia
+            // 👇 THÊM ĐOẠN NÀY ĐỂ HẾT LỖI "Column does not exist"
+            entity.Property(e => e.TienPhat)
+                .HasPrecision(18, 2)       // Định dạng số tiền
+                .HasDefaultValue(0)        // Mặc định là 0
+                .HasColumnName("tienphat"); // Map với cột chữ thường trong DB
+
+            // MaDocGiaNavigation -> DocGia
             entity.HasOne(d => d.DocGia)
                 .WithMany(p => p.PhieuMuons)
                 .HasForeignKey(d => d.MaDocGia)
