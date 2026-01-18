@@ -10,5 +10,6 @@ namespace QuanLyThuVienSo.API.DTO
         public string? DienThoai { get; set; }
         public string? Cccd { get; set; }
         public string? TrangThaiMuon { get; set; }
+        public decimal TongTienPhat { get; set; }
     }
 }

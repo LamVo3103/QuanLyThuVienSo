@@ -13,13 +13,14 @@ namespace QuanLyThuVienSo.API.BUS
         private DocGiaDTO MapToDTO(DocGia dg)
         {
             string trangThai = "Chưa mượn sách";
+            decimal tongTienPhat = 0; // Biến tính tổng tiền phạt
 
             // Lấy danh sách phiếu đang mượn (Chưa trả)
             var phieuDangMuon = dg.PhieuMuons?.Where(pm => pm.NgayTraThucTe == null).ToList();
 
             if (phieuDangMuon != null && phieuDangMuon.Count > 0)
             {
-                // Nếu có bất kỳ phiếu nào quá hạn -> Gán luôn là QUÁ HẠN
+                // 1. Xác định trạng thái
                 if (phieuDangMuon.Any(pm => pm.NgayTraDuKien < DateTime.Now))
                 {
                     trangThai = "Quá hạn mượn sách";
@@ -28,21 +29,33 @@ namespace QuanLyThuVienSo.API.BUS
                 {
                     trangThai = "Đang mượn sách";
                 }
+
+                // 2. 👇 TÍNH TIỀN PHẠT (Logic: 20k * ngày trễ * số lượng sách)
+                foreach (var pm in phieuDangMuon)
+                {
+                    if (pm.NgayTraDuKien < DateTime.Now)
+                    {
+                        int soNgayTre = (DateTime.Now.Date - pm.NgayTraDuKien.Value.Date).Days;
+                        if (soNgayTre > 0)
+                        {
+                            int soLuongSach = pm.ChiTietPhieuMuons.Sum(ct => ct.SoLuong);
+                            tongTienPhat += (20000 * soNgayTre * soLuongSach);
+                        }
+                    }
+                }
             }
 
             return new DocGiaDTO
             {
                 MaDocGia = dg.MaDocGia,
                 HoTen = dg.HoTen,
-                
-                // 👇 SỬA LỖI Ở ĐÂY (Thêm giá trị mặc định nếu null)
-                GioiTinh = dg.GioiTinh ?? "Khác", 
-                NgaySinh = dg.NgaySinh ?? DateTime.Now, 
-                
+                GioiTinh = dg.GioiTinh ?? "Khác",
+                NgaySinh = dg.NgaySinh ?? DateTime.Now,
                 DiaChi = dg.DiaChi,
                 DienThoai = dg.DienThoai,
                 Cccd = dg.Cccd,
-                TrangThaiMuon = trangThai 
+                TrangThaiMuon = trangThai,
+                TongTienPhat = tongTienPhat
             };
         }
 
@@ -58,7 +71,7 @@ namespace QuanLyThuVienSo.API.BUS
         {
             // Truyền keyword xuống DAL
             var listEntity = await _dal.GetDocGiaQuaHan(keyword);
-            
+
             // Map sang DTO như cũ
             return listEntity.Select(dg => MapToDTO(dg)).ToList();
         }
@@ -84,7 +97,7 @@ namespace QuanLyThuVienSo.API.BUS
         {
             var dg = await _dal.GetById(id);
             if (dg == null) throw new Exception("Không tìm thấy độc giả");
-            
+
             dg.HoTen = request.HoTen;
             dg.GioiTinh = request.GioiTinh;
             dg.NgaySinh = request.NgaySinh;
@@ -92,7 +105,7 @@ namespace QuanLyThuVienSo.API.BUS
             dg.DienThoai = request.DienThoai;
             dg.Cccd = request.Cccd;
             // Không update NgayLamThe
-            
+
             await _dal.Update();
         }
 
@@ -102,7 +115,7 @@ namespace QuanLyThuVienSo.API.BUS
             var dg = await _dal.GetById(id);
             if (dg == null) throw new Exception("Không tìm thấy độc giả");
             if (await _dal.HasLoans(id)) throw new Exception("Độc giả này đang có lịch sử mượn sách, không thể xóa!");
-            
+
             await _dal.Delete(dg);
         }
     }
