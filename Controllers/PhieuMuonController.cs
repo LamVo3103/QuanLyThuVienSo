@@ -26,8 +26,8 @@ namespace QuanLyThuVienSo.API.Controllers
         public async Task<IActionResult> TraSach(int id)
         {
             try {
-                await _bus.TraSach(id);
-                return Ok(new { message = "Trả sách thành công" });
+                var (soNgayTre, tienPhat) = await _bus.TraSach(id);
+                return Ok(new { message = "Trả sách thành công", soNgayTre, tienPhat });
             } catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 

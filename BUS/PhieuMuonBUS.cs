@@ -68,8 +68,10 @@ namespace QuanLyThuVienSo.API.BUS
         }
 
         // 2. CHỨC NĂNG TRẢ SÁCH
-        public async Task<string> TraSach(int maPhieu)
+        public async Task<(int soNgayTre, decimal tienPhat)> TraSach(int maPhieu)
         {
+            int soNgayTre = 0;
+            decimal tienPhat = 0;
             // 1. Lấy phiếu kèm chi tiết (để đếm số lượng sách)
             var phieu = await _dal.Context.PhieuMuons
                 .Include(pm => pm.ChiTietPhieuMuons)
@@ -90,13 +92,13 @@ namespace QuanLyThuVienSo.API.BUS
             {
                 // Tính số ngày trễ (Làm tròn lên)
                 TimeSpan tre = ngayTraThucTe.Date - phieu.NgayTraDuKien.Value.Date;
-                int soNgayTre = (int)tre.TotalDays;
+                soNgayTre = (int)tre.TotalDays;
 
                 // Tính tổng số cuốn sách trong phiếu này
                 int tongSoSach = phieu.ChiTietPhieuMuons.Sum(ct => ct.SoLuong);
 
                 // Công thức: 20k * Số ngày * Số sách
-                decimal tienPhat = 20000 * soNgayTre * tongSoSach;
+                tienPhat = 20000 * soNgayTre * tongSoSach;
                 
                 phieu.TienPhat = tienPhat; // Lưu vào DB
                 
@@ -112,7 +114,7 @@ namespace QuanLyThuVienSo.API.BUS
 
             await _dal.Context.SaveChangesAsync();
             
-            return "Trả sách thành công" + thongBaoPhat;
+            return (soNgayTre, tienPhat);
         }
 
         // 3. LẤY DANH SÁCH ĐANG MƯỢN (CHO PHẦN TRẢ SÁCH)
