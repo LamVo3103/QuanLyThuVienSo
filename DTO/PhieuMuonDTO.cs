@@ -23,6 +23,7 @@ namespace QuanLyThuVienSo.API.DTO
         public DateTime NgayTraDuKien { get; set; }
         public string TenSach { get; set; } = ""; 
         public decimal TongTien { get; set; }
-        public string TrangThai { get; set; } = ""; 
+        public string TrangThai { get; set; } = "";
+        public decimal TienPhat { get; set; } 
     }
 }

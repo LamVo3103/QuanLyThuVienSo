@@ -14,29 +14,29 @@ namespace QuanLyThuVienSo.API.BUS
 
         public PhieuMuonBUS(PhieuMuonDAL dal, DocGiaDAL docGiaDAL, SachDAL sachDAL)
         {
-            _dal = dal; 
-            _docGiaDAL = docGiaDAL; 
+            _dal = dal;
+            _docGiaDAL = docGiaDAL;
             _sachDAL = sachDAL;
         }
 
         // 1. CHỨC NĂNG MƯỢN SÁCH
         public async Task<int> MuonSach(string maDocGia, List<ChiTietMuonDTO> items)
         {
-            if (!await _docGiaDAL.Exists(maDocGia)) 
+            if (!await _docGiaDAL.Exists(maDocGia))
                 throw new Exception("Độc giả không tồn tại");
 
             using var transaction = _dal.Context.Database.BeginTransaction();
             try
             {
-                var phieu = new PhieuMuon 
-                { 
-                    MaDocGia = maDocGia, 
-                    NgayMuon = DateTime.Now, 
-                    NgayTraDuKien = DateTime.Now.AddDays(7) 
+                var phieu = new PhieuMuon
+                {
+                    MaDocGia = maDocGia,
+                    NgayMuon = DateTime.Now,
+                    NgayTraDuKien = DateTime.Now.AddDays(7)
                 };
-                
+
                 _dal.Context.PhieuMuons.Add(phieu);
-                await _dal.Context.SaveChangesAsync(); 
+                await _dal.Context.SaveChangesAsync();
 
                 foreach (var item in items)
                 {
@@ -44,12 +44,12 @@ namespace QuanLyThuVienSo.API.BUS
                     if (sach == null) throw new Exception($"Mã sách {item.MaSach} không tồn tại");
                     if (sach.SoLuong < item.SoLuong) throw new Exception($"Sách '{sach.TenSach}' không đủ số lượng");
 
-                    _dal.Context.ChiTietPhieuMuons.Add(new ChiTietPhieuMuon 
-                    { 
-                        MaPhieu = phieu.MaPhieu, 
-                        MaSach = item.MaSach, 
-                        SoLuong = item.SoLuong, 
-                        DonGia = sach.GiaTien 
+                    _dal.Context.ChiTietPhieuMuons.Add(new ChiTietPhieuMuon
+                    {
+                        MaPhieu = phieu.MaPhieu,
+                        MaSach = item.MaSach,
+                        SoLuong = item.SoLuong,
+                        DonGia = sach.GiaTien
                     });
 
                     sach.SoLuong -= item.SoLuong;
@@ -57,13 +57,13 @@ namespace QuanLyThuVienSo.API.BUS
 
                 await _dal.Context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                
-                return phieu.MaPhieu; 
+
+                return phieu.MaPhieu;
             }
-            catch 
-            { 
-                await transaction.RollbackAsync(); 
-                throw; 
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
             }
         }
 
@@ -86,7 +86,7 @@ namespace QuanLyThuVienSo.API.BUS
 
             // 3. --- TÍNH TIỀN PHẠT (LOGIC MỚI) ---
             string thongBaoPhat = "";
-            
+
             // Nếu có ngày dự kiến và trả trễ hơn dự kiến
             if (phieu.NgayTraDuKien.HasValue && ngayTraThucTe.Date > phieu.NgayTraDuKien.Value.Date)
             {
@@ -99,9 +99,9 @@ namespace QuanLyThuVienSo.API.BUS
 
                 // Công thức: 20k * Số ngày * Số sách
                 tienPhat = 20000 * soNgayTre * tongSoSach;
-                
+
                 phieu.TienPhat = tienPhat; // Lưu vào DB
-                
+
                 thongBaoPhat = $" (Đã quá hạn {soNgayTre} ngày. Phạt: {tienPhat:N0} VNĐ)";
             }
 
@@ -113,17 +113,18 @@ namespace QuanLyThuVienSo.API.BUS
             }
 
             await _dal.Context.SaveChangesAsync();
-            
+
             return (soNgayTre, tienPhat);
         }
 
         // 3. LẤY DANH SÁCH ĐANG MƯỢN (CHO PHẦN TRẢ SÁCH)
+        // Tìm hàm này trong PhieuMuonBUS.cs
         public async Task<List<PhieuMuonHienThiDTO>> GetPhieuDangMuon(string maDocGia)
         {
             var listRaw = await _dal.Context.PhieuMuons
-                .Include(pm => pm.DocGia)            // Kèm thông tin Độc giả (để lấy HoTen)
-                .Include(pm => pm.ChiTietPhieuMuons) // Kèm chi tiết
-                .ThenInclude(ct => ct.Sach)          // Kèm thông tin sách
+                .Include(pm => pm.DocGia)
+                .Include(pm => pm.ChiTietPhieuMuons)
+                .ThenInclude(ct => ct.Sach)
                 .Where(pm => pm.MaDocGia == maDocGia && pm.NgayTraThucTe == null)
                 .ToListAsync();
 
@@ -131,23 +132,39 @@ namespace QuanLyThuVienSo.API.BUS
             foreach (var pm in listRaw)
             {
                 string trangThai = "Đang mượn";
-                if (pm.NgayTraDuKien < DateTime.Now) trangThai = "QUÁ HẠN";
+                decimal tienPhatDuKien = 0; // Mặc định là 0
 
-                // Nối tên sách
+                // --- LOGIC TÍNH TIỀN PHẠT DỰ KIẾN ---
+                if (pm.NgayTraDuKien < DateTime.Now)
+                {
+                    trangThai = "QUÁ HẠN";
+
+                    // Tính số ngày trễ
+                    int soNgayTre = (DateTime.Now.Date - pm.NgayTraDuKien.Value.Date).Days;
+
+                    if (soNgayTre > 0)
+                    {
+                        int tongSoSach = pm.ChiTietPhieuMuons.Sum(ct => ct.SoLuong);
+                        // Công thức: 20k * ngày * số sách
+                        tienPhatDuKien = 20000 * soNgayTre * tongSoSach;
+                    }
+                }
+
+                // --- KẾT THÚC LOGIC ---
+
                 var tenSachStr = string.Join(", ", pm.ChiTietPhieuMuons.Select(ct => ct.Sach.TenSach));
-
-                // Tính tổng tiền (Xử lý null cho DonGia nếu có)
                 decimal tongTien = pm.ChiTietPhieuMuons.Sum(ct => (ct.DonGia ?? 0) * ct.SoLuong);
 
                 result.Add(new PhieuMuonHienThiDTO
                 {
                     MaPhieu = pm.MaPhieu,
-                    HoTen = pm.DocGia?.HoTen ?? "Không rõ", // Lấy tên độc giả
+                    HoTen = pm.DocGia?.HoTen ?? "Không rõ",
                     NgayMuon = pm.NgayMuon,
                     NgayTraDuKien = pm.NgayTraDuKien ?? DateTime.Now,
                     TenSach = tenSachStr,
                     TongTien = tongTien,
-                    TrangThai = trangThai
+                    TrangThai = trangThai,
+                    TienPhat = tienPhatDuKien
                 });
             }
             return result;
